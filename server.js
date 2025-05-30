@@ -33,6 +33,18 @@ const upload = multer({
 });
 
 // Routes
+
+// Serve homepage at '/'
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Serve admin page at '/admin'
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// Login
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
@@ -43,10 +55,12 @@ app.post('/login', (req, res) => {
   }
 });
 
+// Upload file
 app.post('/upload', upload.single('file'), (req, res) => {
   res.json({ message: 'File uploaded!', filename: req.file.filename });
 });
 
+// List uploaded files
 app.get('/files', (req, res) => {
   fs.readdir('uploads/', (err, files) => {
     if (err) return res.status(500).json({ error: 'Unable to list files' });
@@ -54,6 +68,7 @@ app.get('/files', (req, res) => {
   });
 });
 
+// Delete file
 app.delete('/delete/:filename', (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(403).json({ message: 'Token required' });
@@ -69,11 +84,6 @@ app.delete('/delete/:filename', (req, res) => {
   } catch (error) {
     res.status(401).json({ message: 'Invalid or expired token' });
   }
-});
-
-// Admin Page
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // Start Server
