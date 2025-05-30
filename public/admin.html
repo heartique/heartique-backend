@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Heartique Nexus Nurses – Admin Portal</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+    input, button { display: block; margin-top: 10px; padding: 10px; width: 100%; }
+    .file-item { margin-top: 10px; border-bottom: 1px solid #ccc; padding: 5px 0; }
+  </style>
+</head>
+<body>
+
+  <h2>Admin Login</h2>
+  <input type="email" id="email" placeholder="Email" />
+  <input type="password" id="password" placeholder="Password" />
+  <button onclick="login()">Login</button>
+
+  <h2>Upload File</h2>
+  <input type="file" id="fileInput" />
+  <button onclick="uploadFile()">Upload</button>
+
+  <h2>Uploaded Files</h2>
+  <div id="fileList"></div>
+
+  <script>
+    let token = null;
+
+    function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      fetch('/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email, password })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          token = data.token;
+          alert('Login successful ✅');
+          loadFiles();
+        } else {
+          alert('Login failed ❌');
+        }
+      });
+    }
+
+    function uploadFile() {
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) return alert('No file selected');
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert('File uploaded ✅');
+        loadFiles();
+      });
+    }
+
+    function loadFiles() {
+      fetch('/files')
+        .then(res => res.json())
+        .then(files => {
+          const fileList = document.getElementById('fileList');
+          fileList.innerHTML = '';
+          files.forEach(file => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+              <a href="/uploads/${file}" target="_blank">${file}</a>
+              <button onclick="deleteFile('${file}')">Delete</button>
+            `;
+            fileList.appendChild(fileItem);
+          });
+        });
+    }
+
+    function deleteFile(filename) {
+      if (!token) return alert('Login required');
+
+      fetch('/delete/' + filename, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message);
+        loadFiles();
+      });
+    }
+
+    loadFiles();
+  </script>
+
+</body>
+</html>
