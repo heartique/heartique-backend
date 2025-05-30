@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Heartique Nexus Portal</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    input, button { margin: 5px 0; padding: 10px; width: 100%; }
+    .file-box { margin-top: 15px; border: 1px solid #ccc; padding: 10px; border-radius: 5px; }
+    .hidden { display: none; }
+    h2 { margin-top: 30px; }
+  </style>
+</head>
+<body>
+
+  <h2>🔐 Login</h2>
+  <input type="email" id="email" placeholder="Email" value="brianmuthomi851@gmail.com">
+  <input type="password" id="password" placeholder="Password" value="2101#BriAn">
+  <button onclick="login()">Login</button>
+
+  <div id="uploadSection" class="hidden">
+    <h2>⬆️ Upload Any File</h2>
+    <input type="file" id="fileInput">
+    <button onclick="uploadFile()">Upload</button>
+  </div>
+
+  <h2>📂 Uploaded Files</h2>
+  <div id="fileList"></div>
+
+  <script>
+    let token = "";
+
+    function login() {
+      fetch('http://localhost:3000/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          email: document.getElementById('email').value,
+          password: document.getElementById('password').value
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          token = data.token;
+          alert('✅ Login successful!');
+          document.getElementById('uploadSection').classList.remove('hidden');
+          getFiles();
+        } else {
+          alert('❌ Login failed.');
+        }
+      })
+      .catch(err => alert('❌ Error logging in.'));
+    }
+
+    function uploadFile() {
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) return alert("Please select a file");
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      fetch('http://localhost:3000/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message);
+        getFiles();
+      })
+      .catch(err => alert('Upload failed'));
+    }
+
+    function getFiles() {
+      fetch('http://localhost:3000/files')
+      .then(res => res.json())
+      .then(files => {
+        const list = files.map(f => `
+          <div class="file-box">
+            <a href="${f.url}" target="_blank">${f.name}</a>
+            ${token ? `<button onclick="deleteFile('${f.name}')">Delete</button>` : ''}
+          </div>
+        `).join('');
+        document.getElementById('fileList').innerHTML = list;
+      });
+    }
+
+    function deleteFile(name) {
+      fetch(`http://localhost:3000/files/${name}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message);
+        getFiles();
+      });
+    }
+
+    // Show files for all users
+    getFiles();
+  </script>
+
+</body>
+</html>
